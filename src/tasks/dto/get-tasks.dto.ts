@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsEnum  } from 'class-validator';
+import { IsOptional, IsNumber, IsEnum , IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TaskStatus } from '../task.entity';
 export class GetTasksDto {
@@ -15,4 +15,10 @@ export class GetTasksDto {
   @IsOptional()
   @IsEnum(TaskStatus)
   status?: TaskStatus;
+
+  
+  @IsOptional()
+  @IsString()
+  search?: string;
+  
 }

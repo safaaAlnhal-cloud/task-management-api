@@ -7,7 +7,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { GetTasksDto } from './dto/get-tasks.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
-
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
@@ -15,6 +15,7 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private taskRepo: Repository<Task>,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async create(dto: CreateTaskDto) {
@@ -24,6 +25,14 @@ export class TasksService {
       const task = this.taskRepo.create(dto);
       const savedTask = await this.taskRepo.save(task);
 
+     await this.activityLogService.log(
+       'create_task',
+        'Task',
+        savedTask.id,
+        dto,
+      );
+
+      
       this.logger.log('Task created successfully');
 
       return savedTask;
@@ -47,10 +56,10 @@ export class TasksService {
 
 async findAll(query: GetTasksDto) {
   try {
-    const { limit = 10, offset = 0, status } = query;
+    const { limit = 10, offset = 0, status ,search} = query;
 
     this.logger.log(
-      `Fetching tasks | limit=${limit} offset=${offset} status=${status}`,
+      `Fetching tasks |search=${search} limit=${limit} offset=${offset} status=${status}`,
     );
 
     const qb = this.taskRepo.createQueryBuilder('task');
@@ -59,6 +68,11 @@ async findAll(query: GetTasksDto) {
       qb.andWhere('task.status = :status', { status });
     }
 
+    if (search) {
+     qb.andWhere('task.title ILIKE :search', {
+        search: `%${search}%`,
+     });
+    }
     qb.take(limit);
     qb.skip(offset);
 
@@ -101,7 +115,6 @@ async findOne(id: number) {
 async update(id: number, dto: UpdateTaskDto) {
   try {
     this.logger.log(`Updating task id=${id}`);
-
     const task = await this.taskRepo.findOne({
       where: { id },
     });
@@ -110,11 +123,15 @@ async update(id: number, dto: UpdateTaskDto) {
       this.logger.warn(`Task not found id=${id}`);
       throw new NotFoundException('Task not found');
     }
-
     const updatedTask = Object.assign(task, dto);
-
     const saved = await this.taskRepo.save(updatedTask);
 
+   await this.activityLogService.log(
+     'update_task',
+     'Task',
+      saved.id,
+      dto,
+      );
     this.logger.log(`Task updated id=${id}`);
 
     return saved;
@@ -140,6 +157,12 @@ async remove(id: number) {
     }
 
     await this.taskRepo.remove(task);
+
+    await this.activityLogService.log(
+      'delete_task',
+      'Task',
+      id,
+     );
 
     this.logger.log(`Task deleted id=${id}`);
 
@@ -168,6 +191,12 @@ async updateStatus(id: number, dto: UpdateTaskStatusDto) {
     task.status = dto.status;
 
     const saved = await this.taskRepo.save(task);
+    await this.activityLogService.log(
+       'update_status',
+       'Task',
+        saved.id,
+        { status: dto.status },
+      );
 
     this.logger.log(`Task status updated to ${dto.status}`);
 
