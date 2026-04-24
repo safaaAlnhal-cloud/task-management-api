@@ -5,6 +5,7 @@ import { GetTasksDto } from './dto/get-tasks.dto';
 import { UserIdDto } from './dto/user-id.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Delete } from '@nestjs/common';
+import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -35,6 +36,16 @@ update(
 @Delete(':id')
 remove(@Param() params: UserIdDto ) {
   return this.tasksService.remove(params.id);
+}
+
+
+
+@Patch(':id/status')
+updateStatus(
+  @Param() params: UserIdDto,
+  @Body() dto: UpdateTaskStatusDto,
+) {
+  return this.tasksService.updateStatus(params.id, dto);
 }
   
 }

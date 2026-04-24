@@ -1,6 +1,6 @@
-import { IsOptional, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsNumber, IsEnum  } from 'class-validator';
 import { Type } from 'class-transformer';
-
+import { TaskStatus } from '../task.entity';
 export class GetTasksDto {
   @IsOptional()
   @Type(() => Number)
@@ -11,4 +11,8 @@ export class GetTasksDto {
   @Type(() => Number)
   @IsNumber()
   offset?: number= 0;
+
+  @IsOptional()
+  @IsEnum(TaskStatus)
+  status?: TaskStatus;
 }

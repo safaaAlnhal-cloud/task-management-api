@@ -6,6 +6,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { GetTasksDto } from './dto/get-tasks.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 
 @Injectable()
 export class TasksService {
@@ -46,13 +47,22 @@ export class TasksService {
 
 async findAll(query: GetTasksDto) {
   try {
-     const { limit = 10, offset = 0 } = query;
-    this.logger.log('Fetching all tasks');
+    const { limit = 10, offset = 0, status } = query;
 
-    const tasks = await this.taskRepo.find({
-      take: limit,
-      skip: offset,
-    });
+    this.logger.log(
+      `Fetching tasks | limit=${limit} offset=${offset} status=${status}`,
+    );
+
+    const qb = this.taskRepo.createQueryBuilder('task');
+
+    if (status) {
+      qb.andWhere('task.status = :status', { status });
+    }
+
+    qb.take(limit);
+    qb.skip(offset);
+
+    const tasks = await qb.getMany();
 
     this.logger.log(`Fetched ${tasks.length} tasks`);
 
@@ -137,6 +147,34 @@ async remove(id: number) {
 
   } catch (error) {
     this.logger.error(`Failed to delete task id=${id}`, error);
+    throw error;
+  }
+}
+
+
+async updateStatus(id: number, dto: UpdateTaskStatusDto) {
+  try {
+    this.logger.log(`Updating status for task id=${id}`);
+
+    const task = await this.taskRepo.findOne({
+      where: { id },
+    });
+
+    if (!task) {
+      this.logger.warn(`Task not found id=${id}`);
+      throw new NotFoundException('Task not found');
+    }
+
+    task.status = dto.status;
+
+    const saved = await this.taskRepo.save(task);
+
+    this.logger.log(`Task status updated to ${dto.status}`);
+
+    return saved;
+
+  } catch (error) {
+    this.logger.error(`Failed to update status for id=${id}`, error);
     throw error;
   }
 }
