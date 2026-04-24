@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TasksModule } from './tasks/tasks.module';
 import { Task } from './tasks/task.entity';
 import { envValidationSchema } from 'env.validation';
+import { ActivityLog } from './activity-log/activity-log.entity';
+import { ActivityLogModule } from './activity-log/activity-log.module';
 
 @Module({
   imports: [
@@ -22,12 +24,13 @@ import { envValidationSchema } from 'env.validation';
         username: config.get('DB_USER'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities: [Task],
+        entities: [Task, ActivityLog],
         synchronize: false, 
       }),
     }),
 
     TasksModule,
+    ActivityLogModule,
   ],
 })
 export class AppModule {}
